@@ -1,111 +1,168 @@
 'use client';
-
-import React, { useState } from 'react';
-import { ArrowLeft, Zap, Shield, User, Star } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '../../lib/supabaseClient'; 
+import useGameSounds from '../../lib/useGameSounds'; // <--- 1. Import Sound Hook
+import { ArrowLeft, ShoppingBag, Lock, Loader2, CheckCircle } from 'lucide-react';
 
 export default function ShopPage() {
-  const [coins, setCoins] = useState(450); // Hardcoded starting balance
+  // 2. Initialize Sound Hook
+  const { playCash, playWrong } = useGameSounds();
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
-      
-      {/* HEADER */}
-      <header className="bg-white p-4 border-b flex justify-between items-center sticky top-0 z-10">
-        <Link href="/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-blue-600 font-bold transition">
-          <ArrowLeft size={20} /> Back to Dashboard
-        </Link>
-        <div className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full font-black flex items-center gap-2 border border-yellow-300">
-          <span className="text-xl">💰</span> {coins} Coins
-        </div>
-      </header>
+  const [items, setItems] = useState<any[]>([]);
+  const [myCoins, setMyCoins] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [buyingItem, setBuyingItem] = useState<number | null>(null);
+  const [msg, setMsg] = useState(""); 
 
-      {/* SHOP CONTENT */}
-      <main className="max-w-4xl mx-auto w-full p-8">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-black text-blue-600 mb-2">Item Shop</h1>
-          <p className="text-gray-500">Spend your hard-earned coins on power-ups and customization!</p>
-        </div>
+  useEffect(() => {
+    fetchShopData();
+  }, []);
 
-        {/* SECTION 1: POWER UPS */}
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <Zap className="text-yellow-500" /> Power-ups
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <ShopItem 
-            icon={<Shield size={40} className="text-blue-500"/>}
-            name="Streak Freeze"
-            desc="Miss a day of practice without losing your streak."
-            price={200}
-            userCoins={coins}
-            onBuy={(price: number) => setCoins(prev => prev - price)}
-          />
-          <ShopItem 
-            icon={<Star size={40} className="text-purple-500"/>}
-            name="Double XP Potion"
-            desc="Earn double XP for the next 30 minutes."
-            price={150}
-            userCoins={coins}
-            onBuy={(price: number) => setCoins(prev => prev - price)}
-          />
-        </div>
+  async function fetchShopData() {
+    try {
+      // 1. Get the Shop Items
+      const { data: shopData } = await supabase
+        .from('shop_items')
+        .select('*')
+        .order('price', { ascending: true });
 
-        {/* SECTION 2: AVATAR FRAMES */}
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <User className="text-blue-500" /> Avatar Frames
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <ShopItem 
-            icon={<div className="w-12 h-12 rounded-full border-4 border-yellow-400 bg-gray-200"></div>}
-            name="Gold Frame"
-            desc="Show off your status with a shiny gold border."
-            price={500}
-            userCoins={coins}
-            onBuy={(price: number) => setCoins(prev => prev - price)}
-          />
-          <ShopItem 
-            icon={<div className="w-12 h-12 rounded-full border-4 border-red-500 bg-gray-200"></div>}
-            name="Ruby Frame"
-            desc="A fiery red frame for the top students."
-            price={1000}
-            userCoins={coins}
-            onBuy={(price: number) => setCoins(prev => prev - price)}
-          />
-          <ShopItem 
-            icon={<div className="w-12 h-12 rounded-full border-4 border-dashed border-indigo-500 bg-gray-200"></div>}
-            name="Neon Frame"
-            desc="A futuristic neon glow for your avatar."
-            price={300}
-            userCoins={coins}
-            onBuy={(price: number) => setCoins(prev => prev - price)}
-          />
-        </div>
-      </main>
+      // 2. Get YOUR current coin balance
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('coins')
+        .eq('email', 'student@test.com')
+        .single();
+
+      if (shopData) setItems(shopData);
+      if (profileData) setMyCoins(profileData.coins);
+    } catch (error) {
+      console.error("Shop Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleBuy = async (item: any) => {
+    setMsg("");
+    
+    // Check affordability
+    if (myCoins < item.price) {
+      playWrong(); // <--- 3. Play BUZZ sound if broke ❌
+      setMsg("❌ Not enough coins! Go do some homework.");
+      return;
+    }
+
+    setBuyingItem(item.id);
+
+    // 1. Calculate new balance
+    const newBalance = myCoins - item.price;
+
+    // 2. Update Database
+    const { error } = await supabase
+      .from('profiles')
+      .update({ coins: newBalance })
+      .eq('email', 'student@test.com');
+
+    if (!error) {
+      // 3. Update Screen immediately
+      setMyCoins(newBalance);
+      playCash(); // <--- 4. Play CHA-CHING sound on success 💰
+      setMsg(`✅ Successfully bought ${item.name}!`);
+    } else {
+      playWrong(); // <--- 5. Play BUZZ sound on error ❌
+      setMsg("❌ Transaction failed.");
+    }
+
+    setBuyingItem(null);
+  };
+
+  // --- NEW LOADING SCREEN (Clean White) ---
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 text-blue-600">
+      <Loader2 className="animate-spin" size={40} />
     </div>
   );
-}
 
-// Helper Component for the Cards
-function ShopItem({ icon, name, desc, price, userCoins, onBuy }: any) {
-  const canAfford = userCoins >= price;
-  
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center hover:shadow-lg transition-all">
-      <div className="mb-4 bg-gray-50 p-4 rounded-full">{icon}</div>
-      <h3 className="font-bold text-lg">{name}</h3>
-      <p className="text-gray-400 text-sm mb-6 h-10">{desc}</p>
+    <div className="min-h-screen bg-gray-50 font-sans selection:bg-blue-100">
       
-      <button 
-        onClick={() => canAfford && onBuy(price)}
-        disabled={!canAfford}
-        className={`w-full py-2 rounded-xl font-bold transition-colors ${
-          canAfford 
-            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 shadow-lg' 
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-        }`}
-      >
-        {canAfford ? `Buy for ${price}` : `Need ${price} Coins`}
-      </button>
+      {/* NAVBAR */}
+      <nav className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="text-gray-400 hover:text-blue-600 transition flex items-center gap-2 font-bold">
+            <ArrowLeft size={20} /> Back
+          </Link>
+          <div className="text-xl font-black text-blue-900 italic tracking-tighter">
+            ITEM SHOP
+          </div>
+        </div>
+        
+        {/* COIN WALLET */}
+        <div className="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full border border-yellow-300 shadow-inner">
+          <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-yellow-800 text-xs font-bold">$</div>
+          <span className="font-bold text-yellow-800 text-lg">
+            {myCoins}
+          </span>
+        </div>
+      </nav>
+
+      <div className="max-w-5xl mx-auto p-8">
+        
+        {/* HEADER */}
+        <div className="text-center mb-10">
+          <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4 shadow-sm">
+            <ShoppingBag size={40} />
+          </div>
+          <h1 className="text-4xl font-black text-gray-900 mb-2">Spend Your Rewards</h1>
+          <p className="text-gray-500">You have {myCoins} coins to spend.</p>
+        </div>
+
+        {/* NOTIFICATION MESSAGE */}
+        {msg && (
+          <div className={`text-center p-4 mb-8 rounded-xl font-bold animate-pulse shadow-sm ${msg.includes('❌') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700 flex items-center justify-center gap-2'}`}>
+            {msg.includes('✅') && <CheckCircle size={20}/>} {msg}
+          </div>
+        )}
+
+        {/* ITEMS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {items.map((item) => (
+            <div key={item.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center hover:-translate-y-1 hover:shadow-xl transition duration-300">
+              
+              {/* ICON BUBBLE */}
+              <div className="text-6xl mb-6 bg-gray-50 w-28 h-28 rounded-full flex items-center justify-center border border-gray-100 shadow-inner">
+                {item.icon}
+              </div>
+              
+              <h3 className="text-xl font-black text-gray-900 mb-1">{item.name}</h3>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">{item.category}</p>
+              
+              <div className="mt-auto w-full">
+                <button 
+                  onClick={() => handleBuy(item)}
+                  disabled={buyingItem === item.id || myCoins < item.price}
+                  className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95
+                    ${myCoins >= item.price 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 shadow-lg' 
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  {buyingItem === item.id ? (
+                    <Loader2 className="animate-spin" /> 
+                  ) : (
+                    <>
+                      {myCoins >= item.price ? <ShoppingBag size={18} /> : <Lock size={18} />}
+                      {item.price} Coins
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
