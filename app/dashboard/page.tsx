@@ -2,12 +2,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient'; 
 import { 
-  Trophy, Flame, Target, BookOpen, 
-  ShoppingBag, LogOut, User,
+  Trophy, Flame, ShoppingBag, LogOut,
   Calculator, Beaker, Monitor, ChevronRight, Library, Video,
-  GraduationCap, ChevronDown // <--- Added Icons
+  GraduationCap, ChevronDown, BookOpen, CheckCircle
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -92,7 +91,6 @@ export default function Dashboard() {
         .eq('id', user.id);
     }
     
-    // Simulate a quick "saved" delay for effect
     setTimeout(() => setUpdatingGrade(false), 500);
   };
 
@@ -160,13 +158,11 @@ export default function Dashboard() {
               Welcome back, <span className="text-indigo-600">{userName}</span>! 👋
             </h1>
             
-            {/* 🔥 NEW QUICK GRADE SELECTOR 🔥 */}
             <div className="flex items-center gap-3 mt-4">
               <div className="relative group">
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 font-bold cursor-pointer transition-all ${updatingGrade ? 'bg-green-100 border-green-300 text-green-700' : 'bg-white border-indigo-100 text-gray-600 hover:border-indigo-300'}`}>
                   {updatingGrade ? <CheckCircleIcon size={18}/> : <GraduationCap size={18} className="text-indigo-500"/>}
                   
-                  {/* The Select Dropdown Overlay */}
                   <select 
                     value={gradeLevel}
                     onChange={(e) => handleGradeChange(e.target.value)}
@@ -217,88 +213,88 @@ export default function Dashboard() {
            </div>
         </div>
 
-        {/* LIBRARY SECTION */}
+        {/* LIBRARY SECTION (FIXED LAYOUT) */}
         <div>
           <h3 className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-4">My Library</h3>
           
-          {/* 1. READER BOOKS */}
+          {/* 1. READER BOOKS - Fixed Overlap */}
           <Link href="/learn">
-            <div className="group bg-blue-50 p-8 rounded-3xl border-2 border-blue-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 cursor-pointer flex items-center justify-between relative overflow-hidden mb-6">
-               <div className="relative z-10">
+            <div className="group bg-blue-50 p-8 rounded-3xl border-2 border-blue-100 hover:border-blue-300 hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden mb-6">
+               <div className="relative z-10 max-w-lg">
                  <div className="flex items-center gap-3 mb-2">
                    <div className="bg-blue-600 text-white p-2 rounded-lg"><BookOpen size={24} /></div>
                    <h3 className="text-2xl font-black text-gray-900">Reader Books & Lessons</h3>
                  </div>
-                 <p className="text-blue-800 font-medium max-w-md">
+                 <p className="text-blue-800 font-medium leading-relaxed">
                    Access your class textbooks for <span className="font-black underline decoration-blue-300">{gradeLevel}</span>.
                  </p>
                </div>
                
-               <div className="hidden md:block text-blue-200 group-hover:text-blue-300 transition-colors transform group-hover:scale-110 duration-500">
+               <div className="hidden md:block text-blue-200 group-hover:text-blue-300 transition-colors transform group-hover:scale-110 duration-500 absolute right-32 opacity-20 md:opacity-100">
                  <Library size={100} />
                </div>
                
-               <div className="absolute right-6 bottom-6 md:static">
-                 <div className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 group-hover:bg-blue-600 group-hover:text-white transition-all">
+               {/* Fixed Button: No longer absolute on mobile */}
+               <div className="mt-6 md:mt-0 z-20">
+                 <div className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 group-hover:bg-blue-600 group-hover:text-white transition-all w-fit">
                    Open Library <ChevronRight size={18} />
                  </div>
                </div>
             </div>
           </Link>
 
-          {/* 2. LABS & CRAFTS */}
+          {/* 2. LABS & CRAFTS - Fixed Overlap */}
           <Link href="/labs">
-            <div className="group bg-red-50 p-8 rounded-3xl border-2 border-red-100 hover:border-red-300 hover:shadow-xl transition-all duration-300 cursor-pointer flex items-center justify-between relative overflow-hidden">
-               <div className="relative z-10">
+            <div className="group bg-red-50 p-8 rounded-3xl border-2 border-red-100 hover:border-red-300 hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden mb-6">
+               <div className="relative z-10 max-w-lg">
                  <div className="flex items-center gap-3 mb-2">
                    <div className="bg-red-600 text-white p-2 rounded-lg"><Beaker size={24} /></div>
                    <h3 className="text-2xl font-black text-gray-900">Labs & DIY Crafts</h3>
                  </div>
-                 <p className="text-red-800 font-medium max-w-md">
+                 <p className="text-red-800 font-medium leading-relaxed">
                    Watch exciting science experiments and learn how to build cool crafts.
                  </p>
                </div>
                
-               <div className="hidden md:block text-red-200 group-hover:text-red-300 transition-colors transform group-hover:scale-110 duration-500">
+               <div className="hidden md:block text-red-200 group-hover:text-red-300 transition-colors transform group-hover:scale-110 duration-500 absolute right-32 opacity-20 md:opacity-100">
                  <Video size={100} /> 
                </div>
                
-               <div className="absolute right-6 bottom-6 md:static">
-                 <div className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 group-hover:bg-red-600 group-hover:text-white transition-all">
+               <div className="mt-6 md:mt-0 z-20">
+                 <div className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 group-hover:bg-red-600 group-hover:text-white transition-all w-fit">
                    Watch Videos <ChevronRight size={18} />
                  </div>
                </div>
             </div>
           </Link>
-        </div>
-<div className="mt-6"> {/* Spacing */} </div>
 
+          {/* 3. BECE EXAMS - Fixed Overlap */}
           <Link href="/bece">
-            <div className="group bg-slate-900 p-8 rounded-3xl border-2 border-slate-700 hover:border-indigo-500 hover:shadow-2xl transition-all duration-300 cursor-pointer flex items-center justify-between relative overflow-hidden">
-               {/* Background Pattern */}
+            <div className="group bg-slate-900 p-8 rounded-3xl border-2 border-slate-700 hover:border-indigo-500 hover:shadow-2xl transition-all duration-300 cursor-pointer flex flex-col md:flex-row md:items-center justify-between relative overflow-hidden">
                <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
-               <div className="relative z-10">
+               <div className="relative z-10 max-w-lg">
                  <div className="flex items-center gap-3 mb-2">
                    <div className="bg-white text-slate-900 p-2 rounded-lg"><GraduationCap size={24} /></div>
                    <h3 className="text-2xl font-black text-white">BECE Past Questions</h3>
                  </div>
-                 <p className="text-slate-400 font-medium max-w-md">
+                 <p className="text-slate-400 font-medium leading-relaxed">
                    Official past questions for Final Year Candidates. <span className="text-yellow-400 font-bold">JHS 3 Only.</span>
                  </p>
                </div>
                
-               <div className="hidden md:block text-slate-700 group-hover:text-white/20 transition-colors transform group-hover:scale-110 duration-500">
+               <div className="hidden md:block text-slate-700 group-hover:text-white/20 transition-colors transform group-hover:scale-110 duration-500 absolute right-32 opacity-20 md:opacity-100">
                  <GraduationCap size={120} />
                </div>
                
-               <div className="absolute right-6 bottom-6 md:static">
-                 <div className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 group-hover:bg-indigo-500 transition-all border border-indigo-400">
+               <div className="mt-6 md:mt-0 z-20">
+                 <div className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-sm flex items-center gap-2 group-hover:bg-indigo-500 transition-all border border-indigo-400 w-fit">
                    Start Exam <ChevronRight size={18} />
                  </div>
                </div>
             </div>
           </Link>
+        </div>
 
         {/* PRACTICE ZONE (WORKBOOKS) */}
         <div>
@@ -364,7 +360,6 @@ export default function Dashboard() {
   );
 }
 
-// Simple Icon for the "Updating" state
 function CheckCircleIcon({size}: {size: number}) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
