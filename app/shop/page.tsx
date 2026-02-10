@@ -1,168 +1,195 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '../../lib/supabaseClient'; 
-import useGameSounds from '../../lib/useGameSounds'; // <--- 1. Import Sound Hook
-import { ArrowLeft, ShoppingBag, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabaseClient';
+import { ArrowLeft, ShoppingBag, Coins, Lock, Check, Loader2, User } from 'lucide-react';
+import useGameSounds from '../../lib/useGameSounds'; // ✅ Kept Sounds
 
 export default function ShopPage() {
-  // 2. Initialize Sound Hook
-  const { playCash, playWrong } = useGameSounds();
-
-  const [items, setItems] = useState<any[]>([]);
-  const [myCoins, setMyCoins] = useState(0);
+  const router = useRouter();
+  const { playCash, playClick, playWrong } = useGameSounds(); // ✅ Kept Sounds
+  
   const [loading, setLoading] = useState(true);
-  const [buyingItem, setBuyingItem] = useState<number | null>(null);
-  const [msg, setMsg] = useState(""); 
+  const [user, setUser] = useState<any>(null);
+  const [inventory, setInventory] = useState<string[]>([]);
+  const [buyingId, setBuyingId] = useState<number | null>(null);
+
+  // --- AVATAR CATALOG (FIXED URLS) ---
+  const shopItems = [
+    // 1. Robot (Works)
+    { id: 1, name: 'Cool Robot', price: 100, url: 'https://api.dicebear.com/9.x/bottts/svg?seed=Felix' },
+    // 2. Cat (Works)
+    { id: 2, name: 'Space Cat', price: 250, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Kitty&accessories=eyepatch' },
+    // 3. Wizard (Works)
+    { id: 3, name: 'Wizard', price: 500, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Wizard&clothing=graphicShirt' },
+    // 4. Ninja (FIXED: Removed invalid 'top' parameter)
+    { id: 4, name: 'Ninja', price: 800, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Ninja' },
+    // 5. King (Works)
+    { id: 5, name: 'King', price: 1000, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=King&clothing=blazerAndShirt' },
+    // 6. Queen (FIXED: Removed invalid 'top' parameter)
+    { id: 6, name: 'Queen', price: 1200, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Queen' },
+  ];
 
   useEffect(() => {
-    fetchShopData();
+    fetchUserData();
   }, []);
 
-  async function fetchShopData() {
-    try {
-      // 1. Get the Shop Items
-      const { data: shopData } = await supabase
-        .from('shop_items')
-        .select('*')
-        .order('price', { ascending: true });
+  async function fetchUserData() {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { router.push('/login'); return; }
 
-      // 2. Get YOUR current coin balance
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('coins')
-        .eq('email', 'student@test.com')
-        .single();
+    const { data } = await supabase
+      .from('profiles')
+      .select('coins, inventory, avatar_url')
+      .eq('id', authUser.id)
+      .single();
 
-      if (shopData) setItems(shopData);
-      if (profileData) setMyCoins(profileData.coins);
-    } catch (error) {
-      console.error("Shop Error:", error);
-    } finally {
-      setLoading(false);
+    if (data) {
+      setUser({ ...data, id: authUser.id });
+      setInventory(data.inventory || []);
     }
+    setLoading(false);
   }
 
+  // --- 🔒 SECURE BUY FUNCTION (From New Code) ---
   const handleBuy = async (item: any) => {
-    setMsg("");
-    
-    // Check affordability
-    if (myCoins < item.price) {
-      playWrong(); // <--- 3. Play BUZZ sound if broke ❌
-      setMsg("❌ Not enough coins! Go do some homework.");
-      return;
-    }
+    if (buyingId) return; // Prevent double clicks
+    setBuyingId(item.id);
 
-    setBuyingItem(item.id);
+    // 1. Call the Database Function (Secure)
+    const { data: success, error } = await supabase.rpc('buy_item', {
+        user_id: user.id,
+        cost: item.price,
+        item_url: item.url
+    });
 
-    // 1. Calculate new balance
-    const newBalance = myCoins - item.price;
+    if (success) {
+        playCash(); // ✅ Sound Effect
+        // Update UI immediately (Optimistic Update)
+        const newInventory = [...inventory, item.url];
+        setUser({
+            ...user,
+            coins: user.coins - item.price,
+            inventory: newInventory,
+            avatar_url: item.url // Auto-equip on buy
+        });
+        setInventory(newInventory);
+        
+        // Also update the avatar_url in DB to auto-equip
+        await supabase.from('profiles').update({ avatar_url: item.url }).eq('id', user.id);
 
-    // 2. Update Database
-    const { error } = await supabase
-      .from('profiles')
-      .update({ coins: newBalance })
-      .eq('email', 'student@test.com');
-
-    if (!error) {
-      // 3. Update Screen immediately
-      setMyCoins(newBalance);
-      playCash(); // <--- 4. Play CHA-CHING sound on success 💰
-      setMsg(`✅ Successfully bought ${item.name}!`);
     } else {
-      playWrong(); // <--- 5. Play BUZZ sound on error ❌
-      setMsg("❌ Transaction failed.");
+        playWrong(); // ✅ Sound Effect
+        alert("Transaction Failed: Not enough coins or error occurred.");
     }
 
-    setBuyingItem(null);
+    setBuyingId(null);
   };
 
-  // --- NEW LOADING SCREEN (Clean White) ---
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 text-blue-600">
-      <Loader2 className="animate-spin" size={40} />
-    </div>
-  );
+  // --- EQUIP FUNCTION (From Old Code) ---
+  // Allows users to switch between items they ALREADY own without buying again
+  const handleEquip = async (url: string) => {
+      playClick();
+      // Optimistic UI Update
+      setUser({ ...user, avatar_url: url });
+      
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: url })
+        .eq('id', user.id);
+  };
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6]"><Loader2 className="animate-spin text-indigo-600" size={40}/></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans selection:bg-blue-100">
+    <div className="min-h-screen bg-[#F3F4F6] font-sans p-6 md:p-10">
       
-      {/* NAVBAR */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-400 hover:text-blue-600 transition flex items-center gap-2 font-bold">
-            <ArrowLeft size={20} /> Back
-          </Link>
-          <div className="text-xl font-black text-blue-900 italic tracking-tighter">
-            ITEM SHOP
-          </div>
-        </div>
-        
-        {/* COIN WALLET */}
-        <div className="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full border border-yellow-300 shadow-inner">
-          <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-yellow-800 text-xs font-bold">$</div>
-          <span className="font-bold text-yellow-800 text-lg">
-            {myCoins}
-          </span>
-        </div>
-      </nav>
-
-      <div className="max-w-5xl mx-auto p-8">
-        
-        {/* HEADER */}
-        <div className="text-center mb-10">
-          <div className="inline-block p-4 bg-blue-100 rounded-full text-blue-600 mb-4 shadow-sm">
-            <ShoppingBag size={40} />
-          </div>
-          <h1 className="text-4xl font-black text-gray-900 mb-2">Spend Your Rewards</h1>
-          <p className="text-gray-500">You have {myCoins} coins to spend.</p>
-        </div>
-
-        {/* NOTIFICATION MESSAGE */}
-        {msg && (
-          <div className={`text-center p-4 mb-8 rounded-xl font-bold animate-pulse shadow-sm ${msg.includes('❌') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700 flex items-center justify-center gap-2'}`}>
-            {msg.includes('✅') && <CheckCircle size={20}/>} {msg}
-          </div>
-        )}
-
-        {/* ITEMS GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {items.map((item) => (
-            <div key={item.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center hover:-translate-y-1 hover:shadow-xl transition duration-300">
-              
-              {/* ICON BUBBLE */}
-              <div className="text-6xl mb-6 bg-gray-50 w-28 h-28 rounded-full flex items-center justify-center border border-gray-100 shadow-inner">
-                {item.icon}
-              </div>
-              
-              <h3 className="text-xl font-black text-gray-900 mb-1">{item.name}</h3>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">{item.category}</p>
-              
-              <div className="mt-auto w-full">
-                <button 
-                  onClick={() => handleBuy(item)}
-                  disabled={buyingItem === item.id || myCoins < item.price}
-                  className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95
-                    ${myCoins >= item.price 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 shadow-lg' 
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {buyingItem === item.id ? (
-                    <Loader2 className="animate-spin" /> 
-                  ) : (
-                    <>
-                      {myCoins >= item.price ? <ShoppingBag size={18} /> : <Lock size={18} />}
-                      {item.price} Coins
-                    </>
-                  )}
-                </button>
-              </div>
+      {/* HEADER (From Old Code - Better UI) */}
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+         <div className="flex items-center gap-4 w-full md:w-auto">
+            <Link href="/dashboard" className="bg-white p-3 rounded-full shadow-sm text-indigo-900 hover:bg-indigo-50 transition">
+               <ArrowLeft size={24}/>
+            </Link>
+            <div>
+               <h1 className="text-4xl font-black text-indigo-900 tracking-tight flex items-center gap-3">
+                  <ShoppingBag className="text-orange-500" size={32}/> Reward Shop
+               </h1>
+               <p className="text-indigo-400 font-bold text-sm">Spend your coins on cool avatars!</p>
             </div>
-          ))}
-        </div>
+         </div>
+
+         {/* COIN BALANCE CARD */}
+         <div className="bg-white px-8 py-4 rounded-2xl shadow-xl shadow-indigo-100 flex items-center gap-4 border border-indigo-50 animate-in slide-in-from-right">
+            <div className="w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 shadow-inner">
+               <Coins size={24}/>
+            </div>
+            <div>
+               <div className="text-3xl font-black text-slate-800">{user?.coins}</div>
+               <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Available Coins</div>
+            </div>
+         </div>
       </div>
+
+      {/* ITEMS GRID */}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+         {shopItems.map((item) => {
+            const isOwned = inventory.includes(item.url);
+            const isEquipped = user?.avatar_url === item.url;
+            const canAfford = user?.coins >= item.price;
+
+            return (
+               <div key={item.id} className={`bg-white rounded-[2.5rem] p-6 shadow-sm border-2 transition-all hover:-translate-y-2 hover:shadow-xl ${isEquipped ? 'border-indigo-500 ring-4 ring-indigo-100' : 'border-transparent'}`}>
+                  
+                  {/* Avatar Preview */}
+                  <div className={`aspect-square rounded-[2rem] mb-6 flex items-center justify-center relative overflow-hidden ${isOwned ? 'bg-indigo-50' : 'bg-slate-100'}`}>
+                     <img src={item.url} alt={item.name} className="w-3/4 h-3/4 object-contain drop-shadow-md"/>
+                     {isEquipped && (
+                        <div className="absolute top-4 right-4 bg-indigo-500 text-white p-2 rounded-full shadow-lg animate-in zoom-in">
+                           <Check size={16} strokeWidth={4}/>
+                        </div>
+                     )}
+                  </div>
+
+                  <div className="flex items-center justify-between mb-6">
+                     <h3 className="font-black text-xl text-slate-800">{item.name}</h3>
+                     {!isOwned && (
+                        <div className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-black text-sm">
+                           <Coins size={14}/> {item.price}
+                        </div>
+                     )}
+                  </div>
+
+                  {/* SMART BUTTON (Handles Buy vs Equip) */}
+                  <button 
+                     onClick={() => {
+                         if (isOwned && !isEquipped) handleEquip(item.url); // Equip Logic
+                         else if (!isOwned) handleBuy(item); // Buy Logic
+                     }}
+                     disabled={buyingId === item.id || (!isOwned && !canAfford) || isEquipped}
+                     className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 transition-all active:scale-95
+                        ${isEquipped 
+                           ? 'bg-slate-100 text-slate-400 cursor-default' 
+                           : isOwned 
+                              ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
+                              : canAfford
+                                 ? 'bg-white border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50'
+                                 : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                        }
+                     `}
+                  >
+                     {buyingId === item.id ? <Loader2 className="animate-spin"/> : 
+                        isEquipped ? "Equipped" :
+                        isOwned ? "Equip Now" : 
+                        canAfford ? "Buy Now" : 
+                        <><Lock size={18}/> {item.price} Coins</>
+                     }
+                  </button>
+               </div>
+            );
+         })}
+      </div>
+
     </div>
   );
 }
