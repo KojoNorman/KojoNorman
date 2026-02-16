@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "./globals.css"; //
 
 export const metadata: Metadata = {
   title: "My E-Workbook",
@@ -13,7 +13,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
+      {/* suppressHydrationWarning goes here on the body to fix extension errors */}
+      <body className="antialiased" suppressHydrationWarning={true}>
         {children}
       </body>
     </html>

@@ -9,7 +9,8 @@ import {
   GraduationCap, ChevronDown, BookOpen, Loader2, Lock,
   LayoutGrid, Settings, Menu, X, Bell, CheckCircle,
   PenTool, Globe, Music, User, Crown,
-  Clock, RefreshCw
+  Clock, RefreshCw, Layers, Folder,
+  Building2, Receipt, History
 } from 'lucide-react';
 
 import 'katex/dist/katex.min.css';
@@ -30,6 +31,9 @@ export default function Dashboard() {
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Category Expansion State
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
   const grades = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'JHS 1', 'JHS 2', 'JHS 3'];
 
   // --- SUBJECTS CONFIG ---
@@ -46,6 +50,37 @@ export default function Dashboard() {
     { name: "History", icon: <Clock size={24}/>, color: "bg-amber-100 text-amber-600", levels: ['all'] },
   ];
 
+  // --- SUBJECT CATEGORIES DEFINITION ---
+  const subjectCategories = [
+    {
+      id: "core",
+      title: "Core Subjects",
+      description: "Math, English, Science & Computing",
+      icon: <Layers size={28} />,
+      color: "bg-blue-600 text-white",
+      bgAccent: "bg-blue-50",
+      subjects: ["Mathematics", "English Language", "Science", "Computing"]
+    },
+    {
+      id: "humanities",
+      title: "Humanities & People",
+      description: "Social Studies, RME, History & OWOP",
+      icon: <Globe size={28} />,
+      color: "bg-orange-500 text-white",
+      bgAccent: "bg-orange-50",
+      subjects: ["Social Studies", "Our World Our People", "RME", "History"]
+    },
+    {
+      id: "arts",
+      title: "Languages & Arts",
+      description: "French & Creative Arts",
+      icon: <Music size={28} />,
+      color: "bg-pink-500 text-white",
+      bgAccent: "bg-pink-50",
+      subjects: ["Creative Arts", "French"]
+    }
+  ];
+
   // Filter Subjects Helper
   const getFilteredSubjects = () => {
     let category = 'primary';
@@ -60,7 +95,13 @@ export default function Dashboard() {
         return false;
     });
   };
-  const displayedSubjects = getFilteredSubjects();
+  
+  const availableSubjects = getFilteredSubjects();
+
+  // Helper to get subjects for a specific category based on current grade availability
+  const getSubjectsForCategory = (categorySubjectNames: string[]) => {
+    return availableSubjects.filter(sub => categorySubjectNames.includes(sub.name));
+  };
 
   // --- FETCH DATA ---
   const fetchDashboardData = useCallback(async (isRefresh = false) => {
@@ -164,24 +205,50 @@ export default function Dashboard() {
         <div className="h-40 flex flex-col items-center justify-center border-b border-dashed border-gray-100 relative bg-slate-50/50">
             <button onClick={() => setSidebarOpen(false)} className="md:hidden absolute top-4 right-4 text-gray-400"><X size={24}/></button>
             <div className="relative w-50 h-30 flex items-center justify-center">
-                {/* 🖼️ LOGO REPLACEMENT - MADE BIGGER */}
                 <div className="flex flex-col items-center">
                     <img 
                       src="/logo.png" 
                       alt="My E-Workbook Logo" 
-                      className="h-30 w-auto object-contain" // Increased height from h-20 to h-28
+                      className="h-30 w-auto object-contain" 
                     />
                 </div>
             </div>
         </div>
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-            <NavItem href="/dashboard" icon={<LayoutGrid size={20}/>} label="Dashboard" active />
-            <NavItem href="/shop" icon={<ShoppingBag size={20}/>} label="Coin Shop" badge={`${profile?.coins ?? 0}`} badgeColor="bg-orange-100 text-orange-700" />
-            <NavItem href="/leaderboard" icon={<Crown size={20}/>} label="Leaderboard" />
-            <NavItem href="/learn" icon={<Library size={20}/>} label="My Library" />
-            <NavItem href="/labs" icon={<Video size={20}/>} label="Science Labs" />
-            <NavItem href="/bece" icon={<Trophy size={20}/>} label="BECE Mock" />
+
+        {/* --- NAVIGATION --- */}
+        <nav className="flex-1 px-4 py-6 overflow-y-auto">
+            
+            {/* SECTION 1: ACADEMIC ZONE */}
+            <div className="mb-8">
+                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Academic Zone</p>
+                <div className="space-y-2">
+                    <NavItem href="/dashboard" icon={<LayoutGrid size={20}/>} label="Dashboard" active />
+                    <NavItem href="/learn" icon={<Library size={20}/>} label="My Library" />
+                    <NavItem href="/labs" icon={<Video size={20}/>} label="Science Labs" />
+                    <NavItem href="/bece" icon={<Trophy size={20}/>} label="BECE Mock" />
+                    <NavItem href="/history" icon={<History size={20}/>} label="Activity Log" />
+                </div>
+            </div>
+
+            {/* SECTION 2: STUDENT HUB */}
+            <div>
+                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Student Hub</p>
+                <div className="space-y-2">
+                    <NavItem href="/school" icon={<Building2 size={20}/>} label="My School" />
+                    <NavItem 
+                        href="/transactions" 
+                        icon={<Receipt size={20}/>} 
+                        label="Subscription" 
+                        badge="Active" 
+                        badgeColor="bg-green-100 text-green-700" 
+                    />
+                    <NavItem href="/shop" icon={<ShoppingBag size={20}/>} label="Coin Shop" badge={`${profile?.coins ?? 0}`} badgeColor="bg-orange-100 text-orange-700" />
+                    <NavItem href="/leaderboard" icon={<Crown size={20}/>} label="Leaderboard" />
+                </div>
+            </div>
+
         </nav>
+
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
             <Link href="/settings" className="flex items-center gap-3 p-3 rounded-2xl bg-white hover:bg-indigo-50 transition border border-gray-100 shadow-sm group">
                 {profile?.avatar_url ? (
@@ -231,80 +298,80 @@ export default function Dashboard() {
                             : 'bg-white border-gray-100 text-gray-700 hover:border-indigo-200 cursor-pointer'}`
                     }
                   >
-                     {updatingGrade ? <Loader2 className="animate-spin" size={18}/> : <GraduationCap size={20} className={isGradeLocked ? "text-slate-400" : "text-indigo-600"}/>}
-                     <select 
+                      {updatingGrade ? <Loader2 className="animate-spin" size={18}/> : <GraduationCap size={20} className={isGradeLocked ? "text-slate-400" : "text-indigo-600"}/>}
+                      <select 
                         value={gradeLevel} 
                         onChange={(e) => handleGradeChange(e.target.value)} 
                         disabled={isGradeLocked} 
                         className={`absolute inset-0 w-full h-full opacity-0 ${isGradeLocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                     >
-                        {grades.map(g => <option key={g} value={g}>{g}</option>)}
-                     </select>
-                     <span className="font-bold">{gradeLevel}</span>
-                     {isGradeLocked ? <Lock size={14} className="opacity-50"/> : <ChevronDown size={16} className="opacity-50"/>}
+                      >
+                         {grades.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <span className="font-bold">{gradeLevel}</span>
+                      {isGradeLocked ? <Lock size={14} className="opacity-50"/> : <ChevronDown size={16} className="opacity-50"/>}
                   </div>
 
                   {/* 🔔 SMART NOTIFICATION AREA */}
                   <div className="relative">
-                     {/* Overlay to close menu when clicking outside */}
-                     {showNotifications && <Overlay />}
+                      {/* Overlay to close menu when clicking outside */}
+                      {showNotifications && <Overlay />}
 
-                     <button 
+                      <button 
                         onClick={() => setShowNotifications(!showNotifications)}
                         className={`w-12 h-12 rounded-full border-2 flex items-center justify-center cursor-pointer transition shadow-sm relative z-50
                             ${showNotifications ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-100'}
                         `}
-                     >
-                        <Bell size={22} />
-                        {/* Red Dot if there are alerts */}
-                        {activeNotifications.some(n => n.type === 'alert') && (
-                            <div className="absolute top-2 right-3 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></div>
-                        )}
-                     </button>
+                      >
+                         <Bell size={22} />
+                         {/* Red Dot if there are alerts */}
+                         {activeNotifications.some(n => n.type === 'alert') && (
+                             <div className="absolute top-2 right-3 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></div>
+                         )}
+                      </button>
 
-                     {showNotifications && (
-                        <div className="absolute right-0 top-14 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in slide-in-from-top-2">
-                           <div className="flex justify-between items-center px-4 py-2 border-b border-gray-50 mb-2">
-                               <span className="font-bold text-sm text-gray-800">Notifications</span>
-                               <span 
-                                 className="text-[10px] font-bold text-indigo-500 cursor-pointer hover:underline"
-                                 onClick={() => setShowNotifications(false)}
-                               >
-                                 Close
-                               </span>
-                           </div>
-                           <div className="space-y-1">
-                               {activeNotifications.map(notif => (
-                                   <div 
-                                     key={notif.id} 
-                                     onClick={() => {
-                                         setShowNotifications(false);
-                                         router.push(notif.link);
-                                     }}
-                                     className="flex gap-3 items-start p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition group"
-                                   >
+                      {showNotifications && (
+                         <div className="absolute right-0 top-14 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-2 z-50 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex justify-between items-center px-4 py-2 border-b border-gray-50 mb-2">
+                                <span className="font-bold text-sm text-gray-800">Notifications</span>
+                                <span 
+                                  className="text-[10px] font-bold text-indigo-500 cursor-pointer hover:underline"
+                                  onClick={() => setShowNotifications(false)}
+                                >
+                                  Close
+                                </span>
+                            </div>
+                            <div className="space-y-1">
+                                {activeNotifications.map(notif => (
+                                    <div 
+                                      key={notif.id} 
+                                      onClick={() => {
+                                          setShowNotifications(false);
+                                          router.push(notif.link);
+                                      }}
+                                      className="flex gap-3 items-start p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition group"
+                                    >
                                        <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 
                                             ${notif.type === 'success' ? 'bg-green-500' : notif.type === 'alert' ? 'bg-orange-500' : 'bg-blue-500'}`}
                                        ></div>
                                        <div>
-                                           <p className="text-xs font-bold text-gray-700 leading-tight group-hover:text-indigo-600 transition-colors">
-                                               {notif.text}
-                                           </p>
-                                           <p className="text-[10px] text-gray-400 font-medium mt-1">{notif.time}</p>
+                                            <p className="text-xs font-bold text-gray-700 leading-tight group-hover:text-indigo-600 transition-colors">
+                                                {notif.text}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 font-medium mt-1">{notif.time}</p>
                                        </div>
                                        <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                                           <ChevronRight size={14} className="text-gray-400"/>
+                                            <ChevronRight size={14} className="text-gray-400"/>
                                        </div>
-                                   </div>
-                               ))}
-                           </div>
-                        </div>
-                     )}
+                                    </div>
+                                ))}
+                            </div>
+                         </div>
+                      )}
                   </div>
               </div>
            </div>
 
-           {/* --- WELCOME BANNER --- */}
+           {/* --- WELCOME BANNER (REFINED) --- */}
            <div className="bg-indigo-600 rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl shadow-indigo-200 mb-10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl pointer-events-none"></div>
               <div className="relative z-10">
@@ -313,6 +380,7 @@ export default function Dashboard() {
                        <h1 className="text-3xl md:text-4xl font-black mb-2">Hello, {userName.split(' ')[0]}! 👋</h1>
                        <p className="text-indigo-200 font-medium">Ready to continue your streak?</p>
                     </div>
+                    {/* TOP RIGHT COIN PILL (KEPT AS HUD) */}
                     <div className="flex gap-4">
                        <div onClick={() => router.push('/shop')} className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-2 border border-white/10 hover:bg-white/30 transition cursor-pointer select-none">
                           <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-yellow-900 shadow-sm"><ShoppingBag size={16}/></div>
@@ -324,6 +392,8 @@ export default function Dashboard() {
                        </div>
                     </div>
                  </div>
+                 
+                 {/* BOTTOM BUTTONS (REMOVED SHOP BUTTON) */}
                  <div className="mt-8 flex flex-wrap gap-3">
                     {dailyDone ? (
                         <button disabled className="bg-white/20 text-indigo-100 px-6 py-3 rounded-xl font-bold flex items-center gap-2 cursor-not-allowed">
@@ -334,53 +404,95 @@ export default function Dashboard() {
                            <Flame size={18}/> Daily Challenge
                         </button>
                     )}
-                    <button onClick={() => router.push('/shop')} className="bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-400 transition flex items-center gap-2">
-                       <ShoppingBag size={18}/> Visit Shop
-                    </button>
+                    {/* REDUNDANT BUTTON REMOVED */}
                  </div>
               </div>
            </div>
 
-           {/* --- SUBJECTS GRID --- */}
-           <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2">
-              <BookOpen size={24} className="text-indigo-500"/> My Subjects
-           </h2>
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {displayedSubjects.map((sub) => (
-                  <Link key={sub.name} href={`/practice/${sub.name}`} className="group bg-white p-6 rounded-[2rem] shadow-sm border-2 border-transparent hover:border-indigo-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity ${sub.color.split(' ')[0]}`}></div>
-                    <div className="flex items-start justify-between mb-4">
-                        <div className={`w-14 h-14 ${sub.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm`}>{sub.icon}</div>
-                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-colors"><ChevronRight size={18} /></div>
-                    </div>
-                    <div>
-                        <h3 className="font-black text-lg text-slate-800 leading-tight mb-1">{sub.name}</h3>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wide group-hover:text-indigo-500 transition-colors">{getSubjectDetails(sub.name, gradeLevel)}</p>
-                    </div>
-                    <div className="mt-4">
-                      <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1"><span>Progress</span><span>{Math.floor(Math.random() * 60) + 10}%</span></div>
-                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500 w-[30%]"></div></div>
-                    </div>
-                  </Link>
-              ))}
+           {/* --- UPDATED: LEARNING HUBS (FOLDERS) --- */}
+           <div className="flex items-center justify-between mb-6">
+             <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+               <Folder size={24} className="text-indigo-500"/> Learning Hubs
+             </h2>
+           </div>
+           
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+             {subjectCategories.map((cat) => {
+               const categorySubjects = getSubjectsForCategory(cat.subjects);
+               // Don't show category if no subjects match for current grade
+               if (categorySubjects.length === 0) return null;
+               
+               const isExpanded = expandedCategory === cat.id;
+
+               return (
+                 <div key={cat.id} className={`bg-white rounded-[2rem] shadow-sm border-2 ${isExpanded ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-transparent hover:border-indigo-100'} transition-all duration-300 overflow-hidden`}>
+                   {/* Header / Clickable Area */}
+                   <div 
+                     onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                     className="p-6 cursor-pointer relative"
+                   >
+                     <div className="flex items-start justify-between">
+                       <div className={`w-16 h-16 rounded-2xl ${cat.color} flex items-center justify-center shadow-md mb-4`}>
+                         {cat.icon}
+                       </div>
+                       <div className={`p-2 rounded-full ${cat.bgAccent} text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-indigo-100 text-indigo-600' : ''}`}>
+                         <ChevronDown size={20} />
+                       </div>
+                     </div>
+                     
+                     <h3 className="text-xl font-black text-slate-800 mb-1">{cat.title}</h3>
+                     <p className="text-sm font-medium text-slate-400">{categorySubjects.length} Subjects inside</p>
+                     
+                     {/* Mini progress bar for category average (simulated) */}
+                     {!isExpanded && (
+                       <div className="mt-4 flex items-center gap-2">
+                         <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                           <div className="h-full bg-slate-300 w-1/3 rounded-full"></div>
+                         </div>
+                         <span className="text-[10px] font-bold text-slate-400">33%</span>
+                       </div>
+                     )}
+                   </div>
+
+                   {/* Expandable Content Area */}
+                   <div className={`bg-slate-50 border-t border-slate-100 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                     <div className="p-4 grid gap-3">
+                       {categorySubjects.map((sub) => (
+                         <Link key={sub.name} href={`/practice/${sub.name}`} className="flex items-center gap-4 p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-300 hover:shadow-md transition-all group">
+                           <div className={`w-10 h-10 ${sub.color} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                             {sub.icon}
+                           </div>
+                           <div className="flex-1">
+                             <h4 className="font-bold text-slate-700 text-sm group-hover:text-indigo-600 transition-colors">{sub.name}</h4>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase">{getSubjectDetails(sub.name, gradeLevel)}</p>
+                           </div>
+                           <ChevronRight size={16} className="text-slate-300 group-hover:text-indigo-500" />
+                         </Link>
+                       ))}
+                     </div>
+                   </div>
+                 </div>
+               );
+             })}
            </div>
 
            {/* --- BECE SECTION --- */}
            {isJHS && (
-             <div className={`mt-10 rounded-[2rem] p-8 relative overflow-hidden transition-all bg-slate-900 text-white`}>
+             <div className={`rounded-[2rem] p-8 relative overflow-hidden transition-all bg-slate-900 text-white shadow-xl shadow-slate-200`}>
                 <div className="absolute right-0 top-0 p-10 opacity-10"><GraduationCap size={200}/></div>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                    <div className="flex items-center gap-6">
-                      <div className={`p-4 rounded-2xl bg-indigo-600 text-white`}><GraduationCap size={32}/></div>
+                      <div className={`p-4 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-900/50`}><GraduationCap size={32}/></div>
                       <div>
-                         <h3 className="text-2xl font-black">BECE Past Questions</h3>
-                         <p className={`font-medium mt-1 text-slate-400`}>Official JHS 3 Exam Preparation</p>
+                          <h3 className="text-2xl font-black">BECE Past Questions</h3>
+                          <p className={`font-medium mt-1 text-slate-400`}>Official JHS 3 Exam Preparation</p>
                       </div>
                    </div>
-                   <button onClick={() => router.push('/bece')} className="px-8 py-4 bg-white text-slate-900 hover:bg-indigo-50 font-black rounded-xl transition shadow-lg">Start Exam Mode</button>
+                   <button onClick={() => router.push('/bece')} className="px-8 py-4 bg-white text-slate-900 hover:bg-indigo-50 font-black rounded-xl transition shadow-lg transform hover:-translate-y-1">Start Exam Mode</button>
                 </div>
              </div>
            )}
+
            <div className="mt-16 mb-8 text-center text-gray-400 text-sm font-bold opacity-60">&copy; 2026 My E-Workbook • Learning made fun</div>
         </main>
       </div>

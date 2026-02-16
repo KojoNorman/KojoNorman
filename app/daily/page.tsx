@@ -4,11 +4,11 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import useGameSounds from '../../lib/useGameSounds';
 import { CheckCircle, XCircle, Trophy, Loader2, ArrowLeft, CalendarOff } from 'lucide-react';
-// import confetti from 'canvas-confetti'; 
-
-// ✅ IMPORT MATH STYLES
 import 'katex/dist/katex.min.css';
-import Latex from 'react-latex-next';
+
+// ✅ Load Latex dynamically (Fixes Mobile Crash)
+import dynamic from 'next/dynamic';
+const Latex = dynamic(() => import('react-latex-next'), { ssr: false });
 
 export default function DailyChallenge() {
   const router = useRouter();
@@ -27,12 +27,17 @@ export default function DailyChallenge() {
     checkEligibility();
   }, []);
 
-  // 🔒 LOGIC FIX: Check Database, not LocalStorage
+  // ✅ HELPER: Get Consistent UTC Date (Fixes Timezone/Mobile Issues)
+  // This ensures "Today" is always the same string "YYYY-MM-DD" on every device
+  const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+  };
+
   async function checkEligibility() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/login'); return; }
 
-    const today = new Date().toISOString().split('T')[0]; 
+    const today = getTodayDate(); // Uses UTC
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -40,6 +45,7 @@ export default function DailyChallenge() {
       .eq('id', user.id)
       .single();
 
+    // Check if the saved date matches today's UTC date
     if (profile?.last_daily_date === today) {
       setAlreadyPlayed(true);
       setLoading(false);
@@ -68,9 +74,9 @@ export default function DailyChallenge() {
     const correct = option === questions[currentIndex].answer;
     if (correct) {
       setScore(score + 1);
-      playCorrect();
+      try { playCorrect(); } catch(e) {} 
     } else {
-      playWrong();
+      try { playWrong(); } catch(e) {} 
     }
 
     setTimeout(() => {
@@ -86,18 +92,14 @@ export default function DailyChallenge() {
 
   const finishGame = async () => {
     setFinished(true);
-    playCash();
-    // confetti({ particleCount: 150 }); 
+    try { playCash(); } catch(e) {}
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-        const today = new Date().toISOString().split('T')[0];
+        // ✅ Lock the User: Save today's UTC date to the database immediately
+        const today = getTodayDate();
         
-        await supabase
-            .from('profiles')
-            .update({ last_daily_date: today })
-            .eq('id', user.id);
-        
+        await supabase.from('profiles').update({ last_daily_date: today }).eq('id', user.id);
         await supabase.rpc('increment_xp', { x: 50, row_id: user.id });
         await supabase.rpc('increment_coins', { x: score * 10, row_id: user.id });
     }
@@ -105,7 +107,6 @@ export default function DailyChallenge() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-indigo-50"><Loader2 className="animate-spin text-indigo-600" size={40}/></div>;
 
-  // --- ALREADY PLAYED SCREEN ---
   if (alreadyPlayed) {
       return (
         <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6 font-sans">
@@ -115,7 +116,7 @@ export default function DailyChallenge() {
                 </div>
                 <h1 className="text-2xl font-black text-slate-900 mb-2">Come Back Tomorrow!</h1>
                 <p className="text-slate-500 font-medium mb-8">
-                    You have already completed today's challenge. <br/>
+                    You have already completed today&apos;s challenge. <br/>
                     Return tomorrow for more rewards!
                 </p>
                 <button onClick={() => router.push('/dashboard')} className="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-black transition">
@@ -126,7 +127,6 @@ export default function DailyChallenge() {
       )
   }
 
-  // --- RESULTS SCREEN ---
   if (finished) {
     return (
         <div className="min-h-screen bg-indigo-600 flex items-center justify-center p-6 font-sans">
@@ -150,35 +150,28 @@ export default function DailyChallenge() {
     );
   }
 
-  // --- GAME SCREEN ---
   const currentQ = questions[currentIndex];
 
-  if (!currentQ) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400 font-bold">No questions available right now.</div>;
+  if (!currentQ) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400 font-bold">No questions available.</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
         <div className="w-full max-w-2xl">
-            
-            {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <span className="text-slate-400 font-black text-sm uppercase tracking-wider">Question {currentIndex + 1} / {questions.length}</span>
                 <button onClick={() => router.push('/dashboard')} className="text-slate-400 hover:text-slate-600 flex items-center gap-1 font-bold transition"><ArrowLeft size={18}/> Quit</button>
             </div>
-            
-            {/* Progress Bar */}
             <div className="h-4 bg-slate-200 rounded-full w-full mb-10 overflow-hidden border border-slate-300/50">
                 <div className="h-full bg-indigo-500 transition-all duration-500 ease-out" style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}></div>
             </div>
-
-            {/* Question Card */}
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-slate-200 mb-8 min-h-[220px] flex items-center justify-center text-center relative overflow-hidden border-b-8 border-slate-100">
+            {/* ✅ FIXED: Replaced min-h-[220px] with min-h-55 */}
+            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl shadow-slate-200 mb-8 min-h-55 flex items-center justify-center text-center relative overflow-hidden border-b-8 border-slate-100">
                 <h2 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight">
-                    {/* ✅ RENDER MATH QUESTION */}
                     <Latex>{currentQ.question}</Latex>
                 </h2>
             </div>
-
-            {/* Options Grid */}
+            
+            {/* Options Grid - Now shows all 4 options always */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {['a', 'b', 'c', 'd'].map((option) => {
                     const isSelected = selectedAnswer === option;
@@ -201,8 +194,9 @@ export default function DailyChallenge() {
                         >
                             <span className="uppercase flex items-center gap-3 w-full">
                                 <span className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center text-sm shrink-0">{option.toUpperCase()}</span>
-                                {/* ✅ RENDER MATH OPTIONS */}
-                                <span className="flex-1"><Latex>{currentQ[option]}</Latex></span>
+                                <span className="flex-1">
+                                    <Latex>{currentQ[option] || ""}</Latex>
+                                </span>
                             </span>
                             {showResult && isCorrect && <CheckCircle size={24} className="animate-in zoom-in spin-in-180 shrink-0"/>}
                             {showResult && isSelected && !isCorrect && <XCircle size={24} className="animate-in zoom-in shrink-0"/>}

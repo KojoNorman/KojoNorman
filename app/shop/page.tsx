@@ -3,31 +3,25 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
-import { ArrowLeft, ShoppingBag, Coins, Lock, Check, Loader2, User } from 'lucide-react';
-import useGameSounds from '../../lib/useGameSounds'; // ✅ Kept Sounds
+import { ArrowLeft, ShoppingBag, Coins, Lock, Check, Loader2 } from 'lucide-react';
+import useGameSounds from '../../lib/useGameSounds';
 
 export default function ShopPage() {
   const router = useRouter();
-  const { playCash, playClick, playWrong } = useGameSounds(); // ✅ Kept Sounds
+  const { playCash, playClick, playWrong } = useGameSounds();
   
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [inventory, setInventory] = useState<string[]>([]);
   const [buyingId, setBuyingId] = useState<number | null>(null);
 
-  // --- AVATAR CATALOG (FIXED URLS) ---
+  // --- AVATAR CATALOG ---
   const shopItems = [
-    // 1. Robot (Works)
     { id: 1, name: 'Cool Robot', price: 100, url: 'https://api.dicebear.com/9.x/bottts/svg?seed=Felix' },
-    // 2. Cat (Works)
     { id: 2, name: 'Space Cat', price: 250, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Kitty&accessories=eyepatch' },
-    // 3. Wizard (Works)
     { id: 3, name: 'Wizard', price: 500, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Wizard&clothing=graphicShirt' },
-    // 4. Ninja (FIXED: Removed invalid 'top' parameter)
     { id: 4, name: 'Ninja', price: 800, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Ninja' },
-    // 5. King (Works)
     { id: 5, name: 'King', price: 1000, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=King&clothing=blazerAndShirt' },
-    // 6. Queen (FIXED: Removed invalid 'top' parameter)
     { id: 6, name: 'Queen', price: 1200, url: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Queen' },
   ];
 
@@ -52,12 +46,12 @@ export default function ShopPage() {
     setLoading(false);
   }
 
-  // --- 🔒 SECURE BUY FUNCTION (From New Code) ---
+  // --- 🔒 SECURE BUY FUNCTION (Updated) ---
   const handleBuy = async (item: any) => {
     if (buyingId) return; // Prevent double clicks
     setBuyingId(item.id);
 
-    // 1. Call the Database Function (Secure)
+    // 1. Call the Database Function (Secure Transaction)
     const { data: success, error } = await supabase.rpc('buy_item', {
         user_id: user.id,
         cost: item.price,
@@ -65,39 +59,42 @@ export default function ShopPage() {
     });
 
     if (success) {
-        playCash(); // ✅ Sound Effect
-        // Update UI immediately (Optimistic Update)
+        playCash();
+        
+        // 2. Log Activity (NEW)
+        await supabase.from('activities').insert({
+            user_id: user.id,
+            type: 'shop_purchase',
+            description: `Bought ${item.name}`,
+            xp_earned: 0
+        });
+
+        // 3. Optimistic UI Update
         const newInventory = [...inventory, item.url];
         setUser({
             ...user,
             coins: user.coins - item.price,
             inventory: newInventory,
-            avatar_url: item.url // Auto-equip on buy
+            avatar_url: item.url // Auto-equip
         });
         setInventory(newInventory);
         
-        // Also update the avatar_url in DB to auto-equip
+        // Auto-equip in DB
         await supabase.from('profiles').update({ avatar_url: item.url }).eq('id', user.id);
 
     } else {
-        playWrong(); // ✅ Sound Effect
+        playWrong();
         alert("Transaction Failed: Not enough coins or error occurred.");
     }
 
     setBuyingId(null);
   };
 
-  // --- EQUIP FUNCTION (From Old Code) ---
-  // Allows users to switch between items they ALREADY own without buying again
+  // --- EQUIP FUNCTION ---
   const handleEquip = async (url: string) => {
       playClick();
-      // Optimistic UI Update
-      setUser({ ...user, avatar_url: url });
-      
-      await supabase
-        .from('profiles')
-        .update({ avatar_url: url })
-        .eq('id', user.id);
+      setUser({ ...user, avatar_url: url }); // Optimistic
+      await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6]"><Loader2 className="animate-spin text-indigo-600" size={40}/></div>;
@@ -105,7 +102,7 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-[#F3F4F6] font-sans p-6 md:p-10">
       
-      {/* HEADER (From Old Code - Better UI) */}
+      {/* HEADER */}
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
          <div className="flex items-center gap-4 w-full md:w-auto">
             <Link href="/dashboard" className="bg-white p-3 rounded-full shadow-sm text-indigo-900 hover:bg-indigo-50 transition">
@@ -160,11 +157,11 @@ export default function ShopPage() {
                      )}
                   </div>
 
-                  {/* SMART BUTTON (Handles Buy vs Equip) */}
+                  {/* SMART BUTTON */}
                   <button 
                      onClick={() => {
-                         if (isOwned && !isEquipped) handleEquip(item.url); // Equip Logic
-                         else if (!isOwned) handleBuy(item); // Buy Logic
+                         if (isOwned && !isEquipped) handleEquip(item.url); 
+                         else if (!isOwned) handleBuy(item); 
                      }}
                      disabled={buyingId === item.id || (!isOwned && !canAfford) || isEquipped}
                      className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-2 transition-all active:scale-95
