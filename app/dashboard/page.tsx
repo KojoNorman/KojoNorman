@@ -254,7 +254,7 @@ export default function Dashboard() {
                 {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="User" className="w-10 h-10 rounded-full border-2 border-white shadow-md object-cover"/>
                 ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-200">{userName.charAt(0)}</div>
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-200">{userName.charAt(0)}</div>
                 )}
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate group-hover:text-indigo-700">{userName}</p>
@@ -350,7 +350,7 @@ export default function Dashboard() {
                                       }}
                                       className="flex gap-3 items-start p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition group"
                                     >
-                                       <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 
+                                       <div className={`mt-1 w-2 h-2 rounded-full shrink-0 
                                             ${notif.type === 'success' ? 'bg-green-500' : notif.type === 'alert' ? 'bg-orange-500' : 'bg-blue-500'}`}
                                        ></div>
                                        <div>
@@ -425,7 +425,7 @@ export default function Dashboard() {
                const isExpanded = expandedCategory === cat.id;
 
                return (
-                 <div key={cat.id} className={`bg-white rounded-[2rem] shadow-sm border-2 ${isExpanded ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-transparent hover:border-indigo-100'} transition-all duration-300 overflow-hidden`}>
+                 <div key={cat.id} className={`bg-white rounded-4xl shadow-sm border-2 ${isExpanded ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-transparent hover:border-indigo-100'} transition-all duration-300 overflow-hidden`}>
                    {/* Header / Clickable Area */}
                    <div 
                      onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
@@ -455,7 +455,7 @@ export default function Dashboard() {
                    </div>
 
                    {/* Expandable Content Area */}
-                   <div className={`bg-slate-50 border-t border-slate-100 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                   <div className={`bg-slate-50 border-t border-slate-100 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-125 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                      <div className="p-4 grid gap-3">
                        {categorySubjects.map((sub) => (
                          <Link key={sub.name} href={`/practice/${sub.name}`} className="flex items-center gap-4 p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-300 hover:shadow-md transition-all group">
@@ -478,7 +478,7 @@ export default function Dashboard() {
 
            {/* --- BECE SECTION --- */}
            {isJHS && (
-             <div className={`rounded-[2rem] p-8 relative overflow-hidden transition-all bg-slate-900 text-white shadow-xl shadow-slate-200`}>
+             <div className={`rounded-4xl p-8 relative overflow-hidden transition-all bg-slate-900 text-white shadow-xl shadow-slate-200`}>
                 <div className="absolute right-0 top-0 p-10 opacity-10"><GraduationCap size={200}/></div>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                    <div className="flex items-center gap-6">

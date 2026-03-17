@@ -128,8 +128,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
       
       {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px] -z-10 translate-x-1/3 -translate-y-1/3"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[100px] -z-10 -translate-x-1/3 translate-y-1/3"></div>
+      <div className="absolute top-0 right-0 w-125 h-125 bg-indigo-500/10 rounded-full blur-[100px] -z-10 translate-x-1/3 -translate-y-1/3"></div>
+      <div className="absolute bottom-0 left-0 w-125 h-125 bg-orange-500/10 rounded-full blur-[100px] -z-10 -translate-x-1/3 translate-y-1/3"></div>
 
       <div className="w-full max-w-md relative z-10">
         
@@ -201,7 +201,7 @@ export default function LoginPage() {
                                 <InputGroup icon={<School/>} name="schoolName" placeholder="School Name" value={formData.schoolName} onChange={handleInputChange} />
                                 <div className="flex gap-2 mt-4">
                                     <button type="button" onClick={() => setStep(1)} className="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl">Back</button>
-                                    <button type="button" onClick={handleNextStep} className="flex-[2] py-4 bg-indigo-600 text-white font-black rounded-2xl flex items-center justify-center gap-2">Next Step <ChevronRight size={20}/></button>
+                                    <button type="button" onClick={handleNextStep} className="flex-2 py-4 bg-indigo-600 text-white font-black rounded-2xl flex items-center justify-center gap-2">Next Step <ChevronRight size={20}/></button>
                                 </div>
                             </div>
                         )}
@@ -216,7 +216,7 @@ export default function LoginPage() {
                                 
                                 <div className="flex gap-2 mt-4">
                                     <button type="button" onClick={() => setStep(2)} className="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl">Back</button>
-                                    <button type="button" onClick={handleSignupSubmit} disabled={loading} className="flex-[2] py-4 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-200">
+                                    <button type="button" onClick={handleSignupSubmit} disabled={loading} className="flex-2 py-4 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-200">
                                         {loading ? <Loader2 className="animate-spin" /> : <><CheckCircle size={20}/> Complete Signup</>}
                                     </button>
                                 </div>

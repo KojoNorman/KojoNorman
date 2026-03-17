@@ -232,12 +232,12 @@ export default function AdminPage() {
   };
 
   // --- HELPERS (HYBRID MODE: HTML TAGS) ---
-  const insertImage = (target: 'quiz' | 'bece' | 'lesson' | 'story') => {
+  const insertImage = (target: string) => {
     const url = prompt("Enter the URL of your image/diagram:");
     if (!url) return;
     
-    // ✅ Changed from Markdown (![alt](url)) to HTML (<img ... />)
-    const html = `\n<img src="${url}" alt="Diagram" class="w-full rounded-lg my-4 shadow-md" />\n`;
+    // ✅ Compact HTML to prevent spacing issues
+    const html = `<img src="${url}" alt="Diagram" class="w-full rounded-lg my-4 shadow-md" />`;
     
     if (target === 'quiz') setQQuestion(prev => prev + html);
     if (target === 'bece') setBQuestion(prev => prev + html);
@@ -245,13 +245,25 @@ export default function AdminPage() {
     if (target === 'story') setSContent(prev => prev + html);
   };
 
-  const insertMarkdown = (type: 'bold' | 'header', target: 'lesson' | 'story') => {
+  // ✅ UPDATED: Compact HTML strings with reduced margins and NEW Table Support
+  const insertMarkdown = (type: string, target: string) => { 
     const setContent = target === 'lesson' ? setLContent : setSContent;
     const content = target === 'lesson' ? lContent : sContent;
     
-    // ✅ Changed from Markdown (**text**) to HTML (<b>text</b>)
     if (type === 'bold') setContent(content + " <b>Bold Text</b> ");
-    if (type === 'header') setContent(content + "\n<h1 class='text-2xl font-bold text-indigo-700 my-4'>Heading</h1>\n");
+    if (type === 'header') setContent(content + `<h2 class='text-2xl font-bold text-indigo-700 my-4'>Heading</h2>`);
+    
+    // ✅ NEW: Insert Table Template
+    if (type === 'table') {
+        const html = `<div class="overflow-x-auto my-4 rounded-xl border border-slate-200 shadow-sm"><table class="min-w-full divide-y divide-slate-200 bg-white text-sm"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left font-black text-slate-900 uppercase">Header 1</th><th class="px-4 py-3 text-left font-black text-slate-900 uppercase">Header 2</th></tr></thead><tbody class="divide-y divide-slate-200"><tr><td class="px-4 py-3 font-bold text-slate-900">Row 1 Col 1</td><td class="px-4 py-3 text-slate-600">Row 1 Col 2</td></tr><tr><td class="px-4 py-3 font-bold text-slate-900">Row 2 Col 1</td><td class="px-4 py-3 text-slate-600">Row 2 Col 2</td></tr></tbody></table></div>`;
+        setContent(content + html);
+    }
+
+    // ✅ NEW: Insight Box with my-2 (reduced margin)
+    if (type === 'insight') {
+        const html = `<div class="bg-blue-50 border-l-4 border-blue-500 p-4 my-2 rounded-r-xl shadow-sm"><h4 class="font-black text-blue-800 text-lg m-0 flex items-center gap-2">💡 Key Insight</h4><p class="text-blue-900 text-sm leading-relaxed m-0 mt-1">Write your insight here...</p></div>`;
+        setContent(content + html);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -287,6 +299,17 @@ export default function AdminPage() {
 
   const processParsedContent = async (html: string) => {
     setMessage("Parsing content...");
+
+    // ✅ THE FIX: Un-escape the HTML tags that Mammoth converted into safe text!
+    // This turns "&lt;h1&gt;" back into "<h1>" so the browser reads it as real code.
+    html = html.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+    // Convert [INSIGHT] tags into HTML boxes
+    html = html.replace(
+        /\[INSIGHT\](.*?)(?=<|$)/gi, 
+        '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 my-2 rounded-r-lg shadow-sm"><h4 class="text-lg font-bold text-blue-800 mb-1">💡 Insight</h4><p class="text-blue-700 text-sm">$1</p></div>'
+    );
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     const elements = Array.from(doc.body.children);
@@ -325,8 +348,10 @@ export default function AdminPage() {
         } else if (text.toLowerCase().startsWith('grade:')) {
             currentData.grade = text.split(':')[1].trim();
         } else {
-            // Keep HTML formatting (bold, images, headers) from parsed Word Doc
-            currentData.content += el.outerHTML; 
+            // ✅ Clean up empty paragraphs caused by Word spacing
+            if (text !== "" || el.innerHTML.includes('<img') || el.innerHTML.includes('<table')) {
+                currentData.content += el.outerHTML; 
+            }
         }
       }
 
@@ -502,7 +527,17 @@ export default function AdminPage() {
                       <h2 className="text-xl font-bold text-blue-300 mb-4">{editingItem ? "Edit Lesson" : "Publish Textbook Lesson"}</h2>
                       <div className="grid grid-cols-2 gap-4"><select className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl" value={lSubject ?? ""} onChange={e => setLSubject(e.target.value)}>{subjects.map(s => <option key={s} value={s}>{s}</option>)}</select><select className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl" value={lGrade ?? ""} onChange={e => setLGrade(e.target.value)}>{grades.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
                       <input className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl" placeholder="Title" value={lTitle ?? ""} onChange={e => setLTitle(e.target.value)} />
-                      <div className="relative"><div className="absolute top-2 right-2 flex gap-2 z-10"><button onClick={() => insertMarkdown('bold', 'lesson')} className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded"><Bold size={14}/></button><button onClick={() => insertMarkdown('header', 'lesson')} className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded"><Type size={14}/></button><button onClick={() => insertImage('lesson')} className="bg-slate-700 hover:bg-slate-600 text-indigo-300 text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><ImageIcon size={14}/> Add Infographic</button></div><textarea className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl min-h-50 pt-10" rows={8} placeholder="Write your lesson here..." value={lContent ?? ""} onChange={e => setLContent(e.target.value)} /></div>
+                      <div className="relative">
+                        <div className="absolute top-2 right-2 flex gap-2 z-10">
+                            {/* ✅ NEW: Table & Insight Buttons */}
+                            <button onClick={() => insertMarkdown('bold', 'lesson')} className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded"><Bold size={14}/></button>
+                            <button onClick={() => insertMarkdown('header', 'lesson')} className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1 rounded"><Type size={14}/></button>
+                            <button onClick={() => insertMarkdown('table', 'lesson')} className="bg-slate-700 hover:bg-slate-600 text-green-300 text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><List size={14}/> Table</button>
+                            <button onClick={() => insertMarkdown('insight', 'lesson')} className="bg-slate-700 hover:bg-slate-600 text-yellow-300 text-xs font-bold px-3 py-1 rounded flex items-center gap-1">💡 Insight</button>
+                            <button onClick={() => insertImage('lesson')} className="bg-slate-700 hover:bg-slate-600 text-indigo-300 text-xs font-bold px-3 py-1 rounded flex items-center gap-1"><ImageIcon size={14}/> Add Infographic</button>
+                        </div>
+                        <textarea className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl min-h-50 pt-10" rows={8} placeholder="Write your lesson here..." value={lContent ?? ""} onChange={e => setLContent(e.target.value)} />
+                      </div>
                       <input className="w-full bg-slate-900 border border-slate-700 p-3 rounded-xl" placeholder="Cover Image URL (optional)" value={lImage ?? ""} onChange={e => setLImage(e.target.value)} />
                       <SubmitBtn loading={loading} onClick={submitLesson} label={editingItem ? "Update Lesson" : "Publish Lesson"} />
                   </div>

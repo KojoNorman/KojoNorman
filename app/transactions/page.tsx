@@ -55,7 +55,7 @@ export default function Transactions() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           
           {/* Subscription Status Card */}
-          <div className={`md:col-span-2 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-xl ${isActive ? 'bg-gradient-to-br from-indigo-600 to-purple-700' : 'bg-gradient-to-br from-red-500 to-orange-600'}`}>
+          <div className={`md:col-span-2 rounded-4xl p-8 text-white relative overflow-hidden shadow-xl ${isActive ? 'bg-linear-to-br from-indigo-600 to-purple-700' : 'bg-linear-to-br from-red-500 to-orange-600'}`}>
             <div className="absolute top-0 right-0 p-12 opacity-10"><CreditCard size={180}/></div>
             
             <div className="relative z-10">
@@ -96,12 +96,12 @@ export default function Transactions() {
 
           {/* Quick Stats */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+            <div className="bg-white p-6 rounded-4xl shadow-sm border border-slate-100">
               <div className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mb-4"><History size={24}/></div>
               <p className="text-slate-400 text-xs font-bold uppercase">Total Paid</p>
               <p className="text-2xl font-black text-slate-800">GH₵ {(transactions.length * 95).toFixed(2)}</p>
             </div>
-            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+            <div className="bg-white p-6 rounded-4xl shadow-sm border border-slate-100">
               <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><Calendar size={24}/></div>
               <p className="text-slate-400 text-xs font-bold uppercase">Next Due Date</p>
               <p className="text-xl font-black text-slate-800">{subscription?.end_date ? new Date(subscription.end_date).toLocaleDateString() : 'N/A'}</p>

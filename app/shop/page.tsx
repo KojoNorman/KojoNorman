@@ -139,7 +139,7 @@ export default function ShopPage() {
                <div key={item.id} className={`bg-white rounded-[2.5rem] p-6 shadow-sm border-2 transition-all hover:-translate-y-2 hover:shadow-xl ${isEquipped ? 'border-indigo-500 ring-4 ring-indigo-100' : 'border-transparent'}`}>
                   
                   {/* Avatar Preview */}
-                  <div className={`aspect-square rounded-[2rem] mb-6 flex items-center justify-center relative overflow-hidden ${isOwned ? 'bg-indigo-50' : 'bg-slate-100'}`}>
+                  <div className={`aspect-square rounded-4xl mb-6 flex items-center justify-center relative overflow-hidden ${isOwned ? 'bg-indigo-50' : 'bg-slate-100'}`}>
                      <img src={item.url} alt={item.name} className="w-3/4 h-3/4 object-contain drop-shadow-md"/>
                      {isEquipped && (
                         <div className="absolute top-4 right-4 bg-indigo-500 text-white p-2 rounded-full shadow-lg animate-in zoom-in">

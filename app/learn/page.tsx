@@ -106,9 +106,14 @@ export default function LibraryPage() {
                <div className="p-8 md:p-16 text-slate-800 max-w-3xl mx-auto pb-32">
                   {readingItem.image_url && <img src={readingItem.image_url} alt="Header" className="w-full h-64 md:h-80 object-cover rounded-3xl mb-12 shadow-2xl"/>}
                   
-                  {/* Correctly renders HTML tags AND respects new lines for manual input */}
+                  {/* ✅ THE FIX:
+                      1. prose-base: Reduced from prose-lg to keep font size normal.
+                      2. prose-p:my-0: REMOVES default paragraph margins. Spacing is now 100% controlled by your "Enter" key.
+                      3. prose-headings:my-3: Keeps headers tight but distinct.
+                      4. leading-normal: Standard line height, not loose.
+                  */}
                   <div 
-                    className="prose prose-indigo prose-lg max-w-none text-slate-700 leading-loose whitespace-pre-wrap"
+                    className="prose prose-indigo prose-base max-w-none text-slate-700 leading-normal whitespace-pre-line prose-p:my-0 prose-headings:my-3 prose-img:my-2 prose-ul:my-2 prose-li:my-0"
                     dangerouslySetInnerHTML={{ __html: readingItem.content || '' }} 
                   />
 

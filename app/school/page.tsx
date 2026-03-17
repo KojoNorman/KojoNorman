@@ -55,7 +55,7 @@ export default function MySchool() {
 
         {!schoolData ? (
           // UNLINKED STATE
-          <div className="bg-white rounded-[2rem] p-10 text-center shadow-sm border-2 border-dashed border-slate-200">
+          <div className="bg-white rounded-4xl p-10 text-center shadow-sm border-2 border-dashed border-slate-200">
             <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6 text-indigo-500"><Building2 size={40}/></div>
             <h2 className="text-2xl font-black text-slate-800 mb-2">No School Linked</h2>
             <p className="text-slate-500 mb-8 max-w-md mx-auto">Join your school to compete with classmates and access school-specific assignments.</p>
@@ -73,8 +73,8 @@ export default function MySchool() {
           <div className="space-y-6">
             
             {/* School Hero Card */}
-            <div className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 relative">
-              <div className="h-32 bg-gradient-to-r from-blue-600 to-indigo-700"></div>
+            <div className="bg-white rounded-4xl overflow-hidden shadow-sm border border-slate-100 relative">
+              <div className="h-32 bg-linear-to-r from-blue-600 to-indigo-700"></div>
               <div className="px-8 pb-8 pt-0 relative">
                 <div className="w-24 h-24 bg-white rounded-2xl shadow-lg -mt-12 flex items-center justify-center mb-4 border-4 border-white">
                    {/* School Logo Placeholder */}
@@ -93,7 +93,7 @@ export default function MySchool() {
             </div>
 
             {/* Class Leaderboard */}
-            <div className="bg-indigo-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
+            <div className="bg-indigo-900 rounded-4xl p-8 text-white relative overflow-hidden">
               <div className="absolute top-0 right-0 p-10 opacity-10"><Trophy size={150}/></div>
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Crown size={24} className="text-yellow-400"/> Top in Your Class</h3>
               

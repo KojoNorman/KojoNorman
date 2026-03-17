@@ -82,7 +82,7 @@ export default function ActivityLog() {
               {activities.map((item, index) => (
                 <div key={item.id} className="relative pl-8">
                   {/* Timeline Dot */}
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 bg-white border-2 border-indigo-500 rounded-full"></div>
+                  <div className="absolute -left-2.25 top-1 w-4 h-4 bg-white border-2 border-indigo-500 rounded-full"></div>
                   
                   {/* Date Header (Only show if different from prev) */}
                   {(index === 0 || getGroupDate(item.created_at) !== getGroupDate(activities[index - 1].created_at)) && (
